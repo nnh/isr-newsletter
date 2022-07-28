@@ -5,6 +5,7 @@
  */
 function createHtmlFile() {
   const inputSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('コンテンツ作成');
+  const urlOutputSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('ニュースレター送信');
   const inputDocId = inputSheet.getRange('C1').getValue();
   const inputDoc = DocumentApp.openById(inputDocId);
   const outputFolder = inputSheet.getRange('C2').getValue();
@@ -43,7 +44,8 @@ function createHtmlFile() {
   const contentType = 'text/plain';
   const charset = 'utf-8';
   const blob = Utilities.newBlob('', contentType, outputFilename).setDataFromString(output, charset);
-  folder.createFile(blob);
+  const newFile = folder.createFile(blob);
+  urlOutputSheet.getRange('B1').setValue(newFile.getUrl());
 }
 class EditHtml{
   constructor(strTitle){
