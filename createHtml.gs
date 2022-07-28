@@ -1,3 +1,8 @@
+/**
+ * Create html files from the content of the document.
+ * @param none.
+ * @return none.
+ */
 function createHtmlFile() {
   const inputSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('コンテンツ作成');
   const inputDocId = inputSheet.getRange('C1').getValue();
@@ -40,12 +45,10 @@ function createHtmlFile() {
   const blob = Utilities.newBlob('', contentType, outputFilename).setDataFromString(output, charset);
   folder.createFile(blob);
 }
-
 class EditHtml{
   constructor(strTitle){
     this.header = this.setHeader() + this.setTitle(strTitle);
     this.footer = this.setFooter();
-
   }
   setHeader(){
     const res = '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd"><html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8p" /><meta http-equiv="content-style-type" content="text/css"><meta http-equiv="content-language" content="ja"><title>名古屋医療センター臨床研究センター情報システム研究室ニュースレター</title></head>';

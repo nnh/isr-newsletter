@@ -4,7 +4,7 @@
 * @return none
 */
 function sendNewsLetter(){
-  const inputSheetName = 'シート1';
+  const inputSheetName = 'ニュースレター送信';
   const fileIdAddress = 'C1';
   const sendMailOptionsRange = 'A2:B4';
   const testToAddress = 'B5';
