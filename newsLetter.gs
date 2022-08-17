@@ -14,15 +14,18 @@ function sendNewsLetter(){
   const inputSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(inputSheetName);
   const fileId = inputSheet.getRange(fileIdAddress).getValue();
   const htmlString = getHtmlFromFile(fileId);
-  var sendMailInfo  = Object.fromEntries(inputSheet.getRange(sendMailOptionsRange).getValues());  
+  let sendMailInfo  = Object.fromEntries(inputSheet.getRange(sendMailOptionsRange).getValues());  
   sendMailInfo.noReply = true;
   sendMailInfo.to = inputSheet.getRange(testToAddress).getValue();
   sendMailInfo.htmlBody = htmlString;
-  /** send test */  
-  var resSendMail = sendMail(sendMailInfo);
+  /** send test */
+  const saveSubject = sendMailInfo.subject; 
+  sendMailInfo.subject = '（テスト送信）' + sendMailInfo.subject; 
+  let resSendMail = sendMail(sendMailInfo);
   if (!resSendMail){
     return;
   }
+  sendMailInfo.subject = saveSubject;
   /** production */
   const res = SpreadsheetApp.getUi().prompt('本番送信する場合は半角小文字で"' + resString + '"と入力し、OKをクリックしてください。それ以外の操作をすると処理を終了します。', ui.ButtonSet.OK_CANCEL);
   if (res.getResponseText() == resString && res.getSelectedButton() == ui.Button.OK){
