@@ -11,6 +11,7 @@ function sendNewsLetter(){
   const inputSheet = commonSettings.sheets.sendNewsLetter;
   const fileIdAddress = 'C1';
   const sendMailOptionsRange = 'A2:B4';
+  const subjectAddress = 'B2';
   const testToAddress = 'B5';
   const mainToAddress = 'B6';
   const resString = 'ok';
@@ -18,24 +19,27 @@ function sendNewsLetter(){
   const fileId = inputSheet.getRange(fileIdAddress).getValue();
   const htmlString = getHtmlFromFile(fileId);
   let sendMailInfo  = Object.fromEntries(inputSheet.getRange(sendMailOptionsRange).getValues());  
-  sendMailInfo.noReply = true;
   sendMailInfo.to = inputSheet.getRange(testToAddress).getValue();
-  sendMailInfo.htmlBody = htmlString;
+  sendMailInfo.options ={};
+  sendMailInfo.options.htmlBody = htmlString;
+  sendMailInfo.options.noReply = sendMailInfo.name === '' ? true : false;
+  if (sendMailInfo.options.noReply){
+    delete sendMailInfo.name;
+  };
   /** send test */
-  const saveSubject = sendMailInfo.subject; 
   sendMailInfo.subject = '（テスト送信）' + sendMailInfo.subject; 
   let resSendMail = sendMail(sendMailInfo);
   if (!resSendMail){
     return;
   }
-  sendMailInfo.subject = saveSubject;
+  sendMailInfo.subject = inputSheet.getRange(subjectAddress).getValue();
   /** production */
   const res = ui.prompt('本番送信する場合は半角小文字で"' + resString + '"と入力し、OKをクリックしてください。それ以外の操作をすると処理を終了します。', ui.ButtonSet.OK_CANCEL);
-  if (res.getResponseText() == resString && res.getSelectedButton() == ui.Button.OK){
+  if (res.getResponseText() === resString && res.getSelectedButton() === ui.Button.OK){
     sendMailInfo.to = inputSheet.getRange(mainToAddress).getValue();
-    const bccSenders = getBccAddress_();
-    if (bccSenders !== null){
-      sendMailInfo.bcc = bccSenders;
+    const temp = getBccAddress_();
+    if (temp !== null){
+      sendMailInfo.options.bcc = temp;
     };
     sendMail(sendMailInfo);
   } else {
@@ -62,10 +66,13 @@ function sendMail(sendMailInfo){
   const alertInfo = editAlertInfoStrings(sendMailInfo);
   if (!alertInfo){
     return;
-  }
+  };
   const res = ui.alert(alertInfo, ui.ButtonSet.OK_CANCEL);
-  if (res == ui.Button.OK){
-    MailApp.sendEmail(sendMailInfo);
+  if (res === ui.Button.OK){
+    GmailApp.sendEmail(sendMailInfo.to, 
+                       sendMailInfo.subject, 
+                       sendMailInfo.body,
+                       sendMailInfo.options);
     ui.alert('メールを送信しました。');
     return true;
   } else {
@@ -79,25 +86,34 @@ function sendMail(sendMailInfo){
 * @return {string} Pop-up menu contents
 */
 function editAlertInfoStrings(sendMailInfo){
-  var errorCheck = Object.assign({}, sendMailInfo);
-  var res = '';
-  if (errorCheck.htmlBody){
-    delete errorCheck.htmlBody;
+  let errorCheck = JSON.parse(JSON.stringify(sendMailInfo));
+  if (errorCheck.options.htmlBody){
+    delete errorCheck.options.htmlBody;
   } else {
     SpreadsheetApp.getUi().alert('error:htmlBodyが空白\n送信をキャンセルします。');
     return null;
   };
   if (errorCheck.body){
     delete errorCheck.body;
-  }
-  Object.keys(errorCheck).forEach(function(key, idx, array){
-    res = res + key + ':' + sendMailInfo[key];
-    if (idx != array.length){
-      res = res + '\n';
-    }
+  };
+  const res = createAlertStrings(errorCheck);
+  return 'OKをクリックするとメールが送信されます。キャンセルをクリックすると送信キャンセルします。\n\n' + res;
+}
+/**
+ * Form output messages.
+ * @param {Object}
+ * @return {String}
+ */
+function createAlertStrings(inputObjects){
+  const keyIdx = 0;
+  const valueIdx = 1;
+  const test = Object.entries(inputObjects).map(x => {
+    if (Object.getPrototypeOf(x[valueIdx]).constructor.name === 'Object'){
+      return createAlertStrings(x[valueIdx]);
+    };
+    return x[keyIdx] + ':' + x[valueIdx];
   });
-  res = 'OKをクリックするとメールが送信されます。キャンセルをクリックすると送信キャンセルします。\n\n' + res;
-  return res;
+  return test.flat().join('\n');
 }
 /**
  * Converts the email address entered in column A of the Bcc Destination List sheet into a comma-delimited string.
