@@ -3,9 +3,13 @@
  * @param none.
  * @return none.
  */
-function createHtmlFile() {
-  const inputSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('コンテンツ作成');
-  const urlOutputSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('ニュースレター送信');
+function createHtmlFile(){
+  const commonSettings = new CommonSettings();
+  if (!commonSettings.sheetStatus){
+    return;
+  };
+  const inputSheet = commonSettings.sheets.createContent;
+  const urlOutputSheet = commonSettings.sheets.sendNewsLetter;
   const inputDocId = inputSheet.getRange('C1').getValue();
   const inputDoc = DocumentApp.openById(inputDocId);
   const outputFolder = inputSheet.getRange('C2').getValue();

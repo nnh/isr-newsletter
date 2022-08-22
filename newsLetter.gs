@@ -4,14 +4,17 @@
 * @return none
 */
 function sendNewsLetter(){
-  const inputSheetName = 'ニュースレター送信';
+  const commonSettings = new CommonSettings();
+  if (!commonSettings.sheetStatus){
+    return;
+  };
+  const inputSheet = commonSettings.sheets.sendNewsLetter;
   const fileIdAddress = 'C1';
   const sendMailOptionsRange = 'A2:B4';
   const testToAddress = 'B5';
   const mainToAddress = 'B6';
   const resString = 'ok';
   const ui = SpreadsheetApp.getUi();
-  const inputSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(inputSheetName);
   const fileId = inputSheet.getRange(fileIdAddress).getValue();
   const htmlString = getHtmlFromFile(fileId);
   let sendMailInfo  = Object.fromEntries(inputSheet.getRange(sendMailOptionsRange).getValues());  
@@ -27,9 +30,13 @@ function sendNewsLetter(){
   }
   sendMailInfo.subject = saveSubject;
   /** production */
-  const res = SpreadsheetApp.getUi().prompt('本番送信する場合は半角小文字で"' + resString + '"と入力し、OKをクリックしてください。それ以外の操作をすると処理を終了します。', ui.ButtonSet.OK_CANCEL);
+  const res = ui.prompt('本番送信する場合は半角小文字で"' + resString + '"と入力し、OKをクリックしてください。それ以外の操作をすると処理を終了します。', ui.ButtonSet.OK_CANCEL);
   if (res.getResponseText() == resString && res.getSelectedButton() == ui.Button.OK){
     sendMailInfo.to = inputSheet.getRange(mainToAddress).getValue();
+    const bccSenders = getBccAddress_();
+    if (bccSenders !== null){
+      sendMailInfo.bcc = bccSenders;
+    };
     sendMail(sendMailInfo);
   } else {
     ui.alert('送信をキャンセルしました。');
@@ -44,7 +51,7 @@ function getHtmlFromFile(fileId){
   const htmlFile = DriveApp.getFileById(fileId).getBlob();
   const htmlContent = HtmlService.createHtmlOutput(htmlFile).getContent();
   return htmlContent;
-}
+} 
 /**
 * Send email
 * @param {Object} Information such as address and title
@@ -91,6 +98,19 @@ function editAlertInfoStrings(sendMailInfo){
   });
   res = 'OKをクリックするとメールが送信されます。キャンセルをクリックすると送信キャンセルします。\n\n' + res;
   return res;
+}
+/**
+ * Converts the email address entered in column A of the Bcc Destination List sheet into a comma-delimited string.
+ * @param none.
+ * @return {String} Returns a comma-separated string; null if column A is empty.
+ */
+function getBccAddress_(){
+  const commonSettings = new CommonSettings();
+  const inputSheet = commonSettings.sheets.bccSenders;
+  const inputColumnNumber = 1;
+  const lastRow = inputSheet.getLastRow();
+  const bccSenders = lastRow > 0 ? inputSheet.getRange(1, inputColumnNumber, lastRow, 1).getValues().join(',') : null;
+  return bccSenders;
 }
 /**
 * Processing at file open
