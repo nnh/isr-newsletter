@@ -28,8 +28,8 @@ function sendNewsLetter(){
   };
   /** send test */
   sendMailInfo.subject = '（テスト送信）' + sendMailInfo.subject; 
-  let resSendMail = sendMail(sendMailInfo);
-  if (!resSendMail){
+  const resSendTestMail = sendMail(sendMailInfo);
+  if (!resSendTestMail){
     return;
   }
   sendMailInfo.subject = inputSheet.getRange(subjectAddress).getValue();
@@ -37,14 +37,25 @@ function sendNewsLetter(){
   const res = ui.prompt('本番送信する場合は半角小文字で"' + resString + '"と入力し、OKをクリックしてください。それ以外の操作をすると処理を終了します。', ui.ButtonSet.OK_CANCEL);
   if (res.getResponseText() === resString && res.getSelectedButton() === ui.Button.OK){
     sendMailInfo.to = inputSheet.getRange(mainToAddress).getValue();
-    const temp = getBccAddress_();
-    if (temp !== null){
-      sendMailInfo.options.bcc = temp;
+    const bccSenders = getBccAddress_();
+    if (bccSenders === null){
+      sendMail(sendMailInfo);
+    } else {
+      bccSenders.some(bcc => {
+        sendMailInfo.options.bcc = bcc;
+        console.log(sendMailInfo.options.bcc);
+        const resSendMail = sendMail(sendMailInfo);
+        // The process ends when Cancel is clicked.
+        if (!resSendMail){
+          return true;
+        } else {
+          Utilities.sleep(2000);
+        };
+      });
     };
-    sendMail(sendMailInfo);
   } else {
     ui.alert('送信をキャンセルしました。');
-  }
+  };
 }
 /**
 * Get the HTML source from a file in Google Drive
@@ -118,14 +129,19 @@ function createAlertStrings(inputObjects){
 /**
  * Converts the email address entered in column A of the Bcc Destination List sheet into a comma-delimited string.
  * @param none.
- * @return {String} Returns a comma-separated string; null if column A is empty.
+ * @return {Array<String>} Returns a comma-separated string; null if column A is empty.
  */
 function getBccAddress_(){
   const commonSettings = new CommonSettings();
   const inputSheet = commonSettings.sheets.bccSenders;
-  const inputColumnNumber = 1;
-  const lastRow = inputSheet.getLastRow();
-  const bccSenders = lastRow > 0 ? inputSheet.getRange(1, inputColumnNumber, lastRow, 1).getValues().join(',') : null;
+  const colAValues = inputSheet.getRange('A:A').getValues().filter(x => x[0] !== '');
+  if (colAValues.length === 0){
+    return null;
+  };
+  // The maximum number of people who can receive the message is 50, so it is divided into 49 each (To + Bcc makes a total of 50).
+  const limitNumber = 49;
+  const numberOfDivisions = Math.ceil(colAValues.length / limitNumber);
+  const bccSenders = new Array(numberOfDivisions).fill().map((_, idx) => colAValues.slice(idx * limitNumber, (idx + 1) * limitNumber).join(','));
   return bccSenders;
 }
 /**
