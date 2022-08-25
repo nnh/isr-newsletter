@@ -1,6 +1,12 @@
 // Working temporary scripts
 function myFunction(){
   const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const bccSheetname = 'Bcc送信先一覧';
+  const checkAddBccSheet = ss.getSheetByName(bccSheetname);
+  if (!checkAddBccSheet){
+    ss.insertSheet(ss.getSheets().length);
+    ss.getActiveSheet().setName(bccSheetname);
+  };
   const sheetname = 'ヘッダー・フッター情報'
   const checkAddSheet = ss.getSheetByName(sheetname);
   if (!checkAddSheet){
