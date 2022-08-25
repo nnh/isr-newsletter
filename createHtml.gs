@@ -9,6 +9,11 @@ function createHtmlFile(){
     return;
   };
   const inputSheet = commonSettings.sheets.createContent;
+  const publisher = inputSheet.getRange('B4').getValue();
+  let htmlInfo = getHeaderFooter_(publisher, commonSettings.sheets.headerAndFooter);
+  if (htmlInfo === null){
+    return;
+  };
   const urlOutputSheet = commonSettings.sheets.sendNewsLetter;
   const inputDocId = inputSheet.getRange('C1').getValue();
   const inputDoc = DocumentApp.openById(inputDocId);
@@ -24,17 +29,7 @@ function createHtmlFile(){
   if (newsletterTitle.length < 0){
     return;
   }
-  let htmlInfo = {};
-  htmlInfo.titleUrl = 'https://crc.nnh.go.jp/';
-  htmlInfo.titleText = '情報システム研究室ニュースレター';
-  htmlInfo.tabTitle = '名古屋医療センター臨床研究センター情報システム研究室ニュースレター';
   htmlInfo.heading = newsletterTitle[0];
-  htmlInfo.footerUrl = 'http://info.nnh.go.jp';
-  htmlInfo.footerUrlText = '臨床研究センターポータルサイト（info.nnh.go.jp）へ';
-  htmlInfo.footerTargetText = '本ニュースレターは、名古屋医療センター臨床研究センターに勤務する皆様にお届けしています。<br>  ';
-  htmlInfo.mailAddress = 'information.system@nnh.go.jp';
-  htmlInfo.mailName = '情報システム研究室';
-  htmlInfo.senderInformation = '独立行政法人国立病院機構 名古屋医療センター 臨床研究センター 情報システム研究室 <br>〒460-0001 愛知県名古屋市中区三の丸 4-1-1<br>※NMC外部への掲載内容の無断転載を禁じます。<br> Copyright©  NHO Nagoya Medical Center, Clinical Research Center All Rights Reserved.';
   const editHtml = new EditHtml(htmlInfo);
   const newsletterBodyItems = paragraphItems.filter(x => x[paragraphItemsIndex.heading] !== 'TITLE').concat([['dummy', null, 'HEADING1']]);
   let saveTitle = '';
@@ -77,7 +72,7 @@ class EditHtml{
     this.header = this.header +           '<table width="100%" cellspacing="0" cellpadding="0" bgcolor="#fff" align="center"style="margin:0;padding:0;font-size:100%;line-height:1.5;font-weight:normal;font-family:&#39;Lucida Grande&#39;,&#39;Hiragino Kaku Gothic ProN&#39;,&#39;\\0030d2\\0030e9\\0030ae\\0030ce\\0089d2\\0030b4  ProN W3&#39;,Meiryo,メイリオ,sans-serif;border-bottom:solid 10px #f4f4f4"><tbody>';
     this.footer = '';
     this.footer = this.footer +           '</tbody></table>';
-    this.footer = this.footer +           this.setFooterUrl(htmlInfo.footerUrl, htmlInfo.footerUrlText);
+    this.footer = this.footer +           this.setFooterUrl(htmlInfo.footerUrlText, htmlInfo.footerUrl);
     this.footer = this.footer +           this.setFooter(htmlInfo.footerTargetText, htmlInfo.mailAddress, htmlInfo.mailName, htmlInfo.senderInformation);
     this.footer = this.footer +         '</td>';
     this.footer = this.footer +       '</tr>'
@@ -170,4 +165,23 @@ class EditHtml{
     res = res + '</tr>';
     return res;
   } 
+}
+/**
+ * Header and footer information is obtained from the publisher's name.
+ * @param {String} The publisher's name.
+ * @param {Object} Data source sheet objects for input rules.
+ * @return {Object} Header and footer information.
+ */
+function getHeaderFooter_(publisher, sourceDataSheet){
+  const keyList = ['mailName', 'tabTitle', 'titleText', 'titleUrl', 'footerUrl', 'footerUrlText', 'footerTargetText', 'mailAddress', 'senderInformation'];
+  const sourceDataPublisherRowIndex = 0;
+  const sourceData = sourceDataSheet.getRange(1, 2, sourceDataSheet.getLastRow(), sourceDataSheet.getLastColumn() -1).getValues();
+  const targetIndex = sourceData[sourceDataPublisherRowIndex].indexOf(publisher);
+  const targetArray = targetIndex > -1 ? sourceData.map(x => x[targetIndex]) : null;
+  if (targetArray === null){
+    return;
+  };
+  let headerAndFooterInfo = {};
+  keyList.forEach((key, idx) => headerAndFooterInfo[key] = targetArray[idx]);
+  return headerAndFooterInfo;
 }

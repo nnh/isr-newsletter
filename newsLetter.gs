@@ -100,7 +100,7 @@ function sendMail(sendMailInfo){
 /**
 * Create a pop-up menu for confirmation before sending an email
 * @param {Object} Information such as address and title
-* @return {string} Pop-up menu contents
+* @return {String} Pop-up menu contents
 */
 function editAlertInfoStrings(sendMailInfo){
   let errorCheck = JSON.parse(JSON.stringify(sendMailInfo));
