@@ -53,12 +53,23 @@ function sendNewsLetter(){
   /** production */
   const res = ui.prompt('本番送信する場合は半角小文字で"' + resString + '"と入力し、OKをクリックしてください。それ以外の操作をすると処理を終了します。', ui.ButtonSet.OK_CANCEL);
   if (res.getResponseText() === resString && res.getSelectedButton() === ui.Button.OK){
-    sendMailInfo.to = sendMailInfo.mainTo;
-    const temp = getBccAddress_();
-    if (temp !== null){
-      sendMailInfo.options.bcc = temp;
+    sendMailInfo.to = inputSheet.getRange(mainToAddress).getValue();
+    const bccSenders = getBccAddress_();
+    if (bccSenders === null){
+      sendMail(sendMailInfo);
+    } else {
+      bccSenders.some(bcc => {
+        sendMailInfo.options.bcc = bcc;
+        console.log(sendMailInfo.options.bcc);
+        const resSendMail = sendMail(sendMailInfo);
+        // The process ends when Cancel is clicked.
+        if (!resSendMail){
+          return true;
+        } else {
+          Utilities.sleep(2000);
+        };
+      });
     };
-    sendMail(sendMailInfo);
   } else {
     ui.alert('送信をキャンセルしました。');
   }
