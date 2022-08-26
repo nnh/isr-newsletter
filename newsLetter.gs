@@ -9,41 +9,57 @@ function sendNewsLetter(){
     return;
   };
   const inputSheet = commonSettings.sheets.sendNewsLetter;
-  const fileIdAddress = 'C1';
-  const sendMailOptionsRange = 'A2:B4';
-  const subjectAddress = 'B2';
-  const testToAddress = 'B5';
-  const mainToAddress = 'B6';
   const resString = 'ok';
   const ui = SpreadsheetApp.getUi();
+  const fileIdAddress = 'C1';
+  const keyIdx = 0;
+  const valueIdx = 1;
+  const inputValueColNumber = 2;
+  let addressRow = {};
+  const options = 'options';
+  addressRow[options] = {};
+  addressRow.subject = 2;
+  addressRow[options].name = 3;
+  addressRow.body = 4;
+  addressRow.testTo = 5;
+  addressRow.mainTo = 6;
+  let sendMailInfo = {};
+  sendMailInfo[options] = {};
+  Object.entries(addressRow).forEach(x => {
+    const keyValue = x[keyIdx] !== options ? x : Object.entries(x[valueIdx])[0];
+    const key = keyValue[keyIdx];
+    const value = inputSheet.getRange(keyValue[valueIdx], inputValueColNumber).getValue();
+    if (x[keyIdx] !== options){
+      sendMailInfo[key] = value;
+    } else {
+      sendMailInfo[options][key] = value;
+    };
+  });
   const fileId = inputSheet.getRange(fileIdAddress).getValue();
   const htmlString = getHtmlFromFile(fileId);
-  let sendMailInfo  = Object.fromEntries(inputSheet.getRange(sendMailOptionsRange).getValues());  
-  sendMailInfo.to = inputSheet.getRange(testToAddress).getValue();
-  sendMailInfo.options ={};
+  sendMailInfo.to = sendMailInfo.testTo;
   sendMailInfo.options.htmlBody = htmlString;
-  sendMailInfo.options.noReply = sendMailInfo.name === '' ? true : false;
+  sendMailInfo.options.noReply = sendMailInfo.options.name === '' ? true : false;
   if (sendMailInfo.options.noReply){
-    delete sendMailInfo.name;
+    delete sendMailInfo.options.name;
   };
   /** send test */
   sendMailInfo.subject = '（テスト送信）' + sendMailInfo.subject; 
   const resSendTestMail = sendMail(sendMailInfo);
   if (!resSendTestMail){
     return;
-  }
-  sendMailInfo.subject = inputSheet.getRange(subjectAddress).getValue();
+  };
+  sendMailInfo.subject = inputSheet.getRange(addressRow.subject, inputValueColNumber).getValue();
   /** production */
   const res = ui.prompt('本番送信する場合は半角小文字で"' + resString + '"と入力し、OKをクリックしてください。それ以外の操作をすると処理を終了します。', ui.ButtonSet.OK_CANCEL);
   if (res.getResponseText() === resString && res.getSelectedButton() === ui.Button.OK){
-    sendMailInfo.to = inputSheet.getRange(mainToAddress).getValue();
+    sendMailInfo.to = sendMailInfo.mainTo;
     const bccSenders = getBccAddress_();
     if (bccSenders === null){
       sendMail(sendMailInfo);
     } else {
       bccSenders.some(bcc => {
         sendMailInfo.options.bcc = bcc;
-        console.log(sendMailInfo.options.bcc);
         const resSendMail = sendMail(sendMailInfo);
         // The process ends when Cancel is clicked.
         if (!resSendMail){
@@ -94,7 +110,7 @@ function sendMail(sendMailInfo){
 /**
 * Create a pop-up menu for confirmation before sending an email
 * @param {Object} Information such as address and title
-* @return {string} Pop-up menu contents
+* @return {String} Pop-up menu contents
 */
 function editAlertInfoStrings(sendMailInfo){
   let errorCheck = JSON.parse(JSON.stringify(sendMailInfo));
@@ -104,9 +120,8 @@ function editAlertInfoStrings(sendMailInfo){
     SpreadsheetApp.getUi().alert('error:htmlBodyが空白\n送信をキャンセルします。');
     return null;
   };
-  if (errorCheck.body){
-    delete errorCheck.body;
-  };
+  const hideSendMailInfoKey = ['body', 'testTo', 'mainTo'];
+  hideSendMailInfoKey.forEach(x => delete errorCheck[x]);
   const res = createAlertStrings(errorCheck);
   return 'OKをクリックするとメールが送信されます。キャンセルをクリックすると送信キャンセルします。\n\n' + res;
 }
