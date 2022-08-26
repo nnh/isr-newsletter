@@ -53,14 +53,13 @@ function sendNewsLetter(){
   /** production */
   const res = ui.prompt('本番送信する場合は半角小文字で"' + resString + '"と入力し、OKをクリックしてください。それ以外の操作をすると処理を終了します。', ui.ButtonSet.OK_CANCEL);
   if (res.getResponseText() === resString && res.getSelectedButton() === ui.Button.OK){
-    sendMailInfo.to = inputSheet.getRange(mainToAddress).getValue();
+    sendMailInfo.to = sendMailInfo.mainTo;
     const bccSenders = getBccAddress_();
     if (bccSenders === null){
       sendMail(sendMailInfo);
     } else {
       bccSenders.some(bcc => {
         sendMailInfo.options.bcc = bcc;
-        console.log(sendMailInfo.options.bcc);
         const resSendMail = sendMail(sendMailInfo);
         // The process ends when Cancel is clicked.
         if (!resSendMail){
